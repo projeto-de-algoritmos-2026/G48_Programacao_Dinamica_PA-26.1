@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Detector de Plagio - Alinhamento de Sequencia</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <main>
+    <div class="exemplos">
+      <span class="exemplos-rotulo">Exemplos:</span>
+      <button type="button" class="btn-ex" data-ex="alto">Plágio alto</button>
+      <button type="button" class="btn-ex" data-ex="medio">Parafraseado</button>
+      <button type="button" class="btn-ex" data-ex="baixo">Textos distintos</button>
+      <button type="button" class="btn-ex" data-ex="curto">Curto (ver matriz)</button>
+    </div>
+
+    <form method="POST" class="entrada">
+      <div class="campos">
+        <div class="campo">
+          <label for="texto_a">Texto A (original)</label>
+          <textarea id="texto_a" name="texto_a" placeholder="Cole aqui o primeiro texto...">{{ texto_a }}</textarea>
+        </div>
+        <div class="campo">
+          <label for="texto_b">Texto B (suspeito)</label>
+          <textarea id="texto_b" name="texto_b" placeholder="Cole aqui o segundo texto...">{{ texto_b }}</textarea>
+        </div>
+      </div>
+      <button type="submit">Comparar textos</button>
+    </form>
+
+    {% if resultado %}
+    <section class="resultado">
+      <div class="placar">
+        {% set s = resultado.similaridade %}
+        {% if s >= 70 %}{% set nivel = 'alto' %}
+        {% elif s >= 40 %}{% set nivel = 'medio' %}
+        {% else %}{% set nivel = 'baixo' %}{% endif %}
+        <div class="gauge {{ nivel }}">
+          <span class="num">{{ s }}%</span>
+          <span class="rotulo">similaridade</span>
+        </div>
+        <ul class="metricas">
+          <li><b>{{ resultado.matches }}</b> palavras casadas</li>
+          <li><b>{{ resultado.tokens_a|length }}</b> palavras em A</li>
+          <li><b>{{ resultado.tokens_b|length }}</b> palavras em B</li>
+          <li>score do alinhamento: <b>{{ resultado.score }}</b></li>
+          {% if nivel == 'alto' %}
+          <li class="veredito alto">⚠️ Forte indício de plágio</li>
+          {% elif nivel == 'medio' %}
+          <li class="veredito medio">Similaridade moderada</li>
+          {% else %}
+          <li class="veredito baixo">Baixa similaridade</li>
+          {% endif %}
+        </ul>
+      </div>
+
+      <h2>Alinhamento</h2>
+      <p class="legenda">
+        <span class="tk match">igual</span>
+        <span class="tk mismatch">substituído</span>
+        <span class="tk gap_b">só em A</span>
+        <span class="tk gap_a">só em B</span>
+      </p>
+      <div class="alinhamento">
+        {% for a, b, tipo in resultado.alinhamento %}
+          {% if tipo == 'match' %}
+            <span class="tk match">{{ a }}</span>
+          {% elif tipo == 'mismatch' %}
+            <span class="tk mismatch" title="A: {{ a }} | B: {{ b }}">{{ a }}/{{ b }}</span>
+          {% elif tipo == 'gap_b' %}
+            <span class="tk gap_b">{{ a }}</span>
+          {% else %}
+            <span class="tk gap_a">{{ b }}</span>
+          {% endif %}
+        {% endfor %}
+      </div>
+
+      <h2>Matriz de Programação Dinâmica</h2>
+      {% set na = resultado.tokens_a|length %}
+      {% set nb = resultado.tokens_b|length %}
+      {% if na <= 30 and nb <= 30 %}
+      <p class="legenda">
+        Cada célula <code>m[i][j]</code> = melhor score alinhando os primeiros
+        <i>i</i> tokens de A com os primeiros <i>j</i> de B.
+        As células <span class="tk-caminho">destacadas</span> formam o
+        <i>traceback</i> do alinhamento ótimo.
+      </p>
+      <div class="tabela-wrap">
+        <table class="matriz">
+          <tr>
+            <th></th>
+            <th>∅</th>
+            {% for tb in resultado.tokens_b %}<th>{{ tb }}</th>{% endfor %}
+          </tr>
+          {% for row in resultado.matriz %}
+          {% set i = loop.index0 %}
+          <tr>
+            {% if i == 0 %}<th>∅</th>{% else %}<th>{{ resultado.tokens_a[i - 1] }}</th>{% endif %}
+            {% for val in row %}
+            {% set j = loop.index0 %}
+            <td class="{% if (i, j) in resultado.caminho %}celula-caminho{% endif %}">{{ val }}</td>
+            {% endfor %}
+          </tr>
+          {% endfor %}
+        </table>
+      </div>
+      {% else %}
+      <p class="aviso">
+        Matriz omitida: textos longos demais ({{ na }}×{{ nb }} células).
+        Use textos com até 30 palavras cada para visualizar a tabela completa.
+      </p>
+      {% endif %}
+    </section>
+    {% endif %}
+  </main>
+
+  <script>
+    const EXEMPLOS = {
+      alto: {
+        a: "A inteligência artificial está transformando profundamente o mercado de trabalho ao automatizar tarefas repetitivas e apoiar decisões complexas em diversos setores da economia. Empresas de tecnologia, saúde e finanças já utilizam algoritmos de aprendizado de máquina para analisar grandes volumes de dados, prever tendências de consumo e otimizar processos internos. No entanto, essa revolução também levanta preocupações importantes sobre a substituição de empregos, a necessidade de requalificação profissional e os limites éticos do uso de sistemas autônomos. Especialistas defendem que governos e instituições de ensino devem investir em educação continuada para preparar os trabalhadores para as profissões do futuro.",
+        b: "A inteligência artificial está transformando profundamente o mercado de trabalho automatizando tarefas repetitivas e apoiando decisões complexas em vários setores da economia. Empresas de tecnologia, saúde e finanças já usam algoritmos de aprendizado de máquina para analisar grandes volumes de dados, prever tendências de consumo e otimizar processos internos. Contudo, essa revolução também levanta preocupações importantes sobre a substituição de empregos, a necessidade de requalificação profissional e os limites éticos do uso de sistemas autônomos. Especialistas afirmam que governos e instituições de ensino precisam investir em educação continuada para preparar os trabalhadores para as profissões do futuro."
+      },
+      medio: {
+        a: "O aquecimento global é causado principalmente pela emissão de gases do efeito estufa resultantes das atividades humanas, como a queima de combustíveis fósseis, o desmatamento e a agricultura intensiva. Esses gases retêm o calor na atmosfera e elevam a temperatura média do planeta, provocando o derretimento das geleiras, a subida do nível dos oceanos e o aumento de eventos climáticos extremos. Cientistas alertam que, sem uma redução drástica das emissões, as consequências para os ecossistemas e para a sociedade serão cada vez mais graves nas próximas décadas.",
+        b: "As atividades humanas, especialmente a queima de combustíveis fósseis e a derrubada de florestas, liberam enormes quantidades de gases de efeito estufa, sendo a principal causa do aquecimento do planeta. Ao aprisionar o calor na atmosfera, esses gases fazem a temperatura global subir, o que derrete geleiras, faz os mares avançarem sobre o litoral e torna tempestades e secas mais frequentes e intensas. Pesquisadores afirmam que, caso as emissões não caiam rapidamente, os danos à natureza e às pessoas tendem a se agravar ao longo dos próximos anos."
+      },
+      baixo: {
+        a: "A fotossíntese é o processo pelo qual as plantas, as algas e algumas bactérias convertem luz solar, água e gás carbônico em glicose e oxigênio. Esse mecanismo ocorre nos cloroplastos, organelas que contêm clorofila, o pigmento verde responsável por captar a energia luminosa. A glicose produzida serve como fonte de energia para o crescimento dos vegetais, enquanto o oxigênio liberado é essencial para a respiração da maioria dos seres vivos do planeta.",
+        b: "O futebol é o esporte mais popular do mundo e movimenta bilhões de reais por ano em transferências de jogadores, patrocínios e direitos de transmissão. Surgido na Inglaterra no século XIX, o jogo se espalhou rapidamente por todos os continentes e hoje reúne multidões em estádios e diante das telas durante competições como a Copa do Mundo. Mais do que uma simples atividade física, o futebol é um fenômeno cultural que desperta paixões, une torcidas e revela talentos em diferentes países."
+      },
+      curto: {
+        a: "o gato preto subiu no telhado",
+        b: "o gato branco desceu do telhado"
+      }
+    };
+
+    const ta = document.getElementById("texto_a");
+    const tb = document.getElementById("texto_b");
+    document.querySelectorAll(".btn-ex").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        const ex = EXEMPLOS[btn.dataset.ex];
+        ta.value = ex.a;
+        tb.value = ex.b;
+        ta.focus();
+      });
+    });
+  </script>
+</body>
+</html>
