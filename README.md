@@ -3,7 +3,7 @@
 Número da Lista: 48<br>
 Conteúdo da Disciplina: Programação Dinâmica<br>
 
-**Apresentação:** -
+**Apresentação:** [https://youtu.be/3x5_BRf7\_\_Q](https://youtu.be/3x5_BRf7__Q)
 
 ## Alunos
 
@@ -17,15 +17,15 @@ Conteúdo da Disciplina: Programação Dinâmica<br>
 Aplicação web (Flask) que **detecta plágio entre dois textos** usando o
 algoritmo de **Alinhamento de Sequência (Needleman-Wunsch)**, implementado
 de forma **iterativa** (preenchimento de matriz de Programação Dinâmica +
-*traceback*).
+_traceback_).
 
 Cada texto é tokenizado em palavras (normalizadas: minúsculas e sem acento).
 O algoritmo alinha globalmente as duas sequências de palavras e classifica
 cada posição como:
 
 - **igual** — palavra copiada (casamento),
-- **substituído** — palavra trocada por outra (*mismatch*),
-- **só em A / só em B** — palavra inserida ou removida (lacuna/*gap*).
+- **substituído** — palavra trocada por outra (_mismatch_),
+- **só em A / só em B** — palavra inserida ou removida (lacuna/_gap_).
 
 A partir do alinhamento, calcula uma **similaridade (%)** e dá um veredito
 (baixo / moderado / forte indício de plágio).
@@ -47,9 +47,9 @@ Pesos: match = +1, mismatch = −1, gap = −1.
 
 ## Screenshots
 
-> Adicionar 3 screenshots: (1) tela inicial com os dois textos,
-> (2) resultado com gauge de similaridade,
-> (3) alinhamento palavra a palavra destacado.
+![Screenshot 1](images/imagem1.png)
+![Screenshot 2](images/imagem2.png)
+![Screenshot 3](images/imagem3.png)
 
 ## Instalação
 
