@@ -60,6 +60,7 @@ def alinhar(texto_a: str, texto_b: str):
     alinhamento = []
     i, j = na, nb
     matches = 0
+    caminho = {(i, j)}            # celulas (i,j) visitadas no traceback
     while i > 0 or j > 0:
         if i > 0 and j > 0:
             custo = MATCH if norm_a[i - 1] == norm_b[j - 1] else MISMATCH
@@ -70,14 +71,17 @@ def alinhar(texto_a: str, texto_b: str):
                 alinhamento.append((tokens_a[i - 1], tokens_b[j - 1], tipo))
                 i -= 1
                 j -= 1
+                caminho.add((i, j))
                 continue
         if i > 0 and m[i][j] == m[i - 1][j] + GAP:
             alinhamento.append((tokens_a[i - 1], None, "gap_b"))
             i -= 1
+            caminho.add((i, j))
             continue
         # resta lacuna em A
         alinhamento.append((None, tokens_b[j - 1], "gap_a"))
         j -= 1
+        caminho.add((i, j))
 
     alinhamento.reverse()
 
@@ -85,10 +89,14 @@ def alinhar(texto_a: str, texto_b: str):
     denom = max(na, nb) or 1
     similaridade = round(100.0 * matches / denom, 1)
 
+    # caminho como lista de listas (i,j) p/ consulta facil no template
+    caminho_lista = sorted(caminho)
+
     return {
         "tokens_a": tokens_a,
         "tokens_b": tokens_b,
         "matriz": m,
+        "caminho": caminho_lista,
         "alinhamento": alinhamento,
         "similaridade": similaridade,
         "score": m[na][nb],
